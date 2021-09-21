@@ -34,7 +34,7 @@ func handler(numStories int, tpl *template.Template) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		stories, err := getTopStories(30)
+		stories, err := getCachedStories(30)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -49,6 +49,24 @@ func handler(numStories int, tpl *template.Template) http.HandlerFunc {
 			return
 		}
 	})
+}
+
+var (
+	cache           []item
+	cacheExpiration time.Time
+)
+
+func getCachedStories(numStories int) ([]item, error) {
+	if time.Now().Sub(cacheExpiration) < 0 {
+		return cache, nil
+	}
+	stories, err := getTopStories(numStories)
+	if err != nil {
+		return nil, err
+	}
+	cache = stories
+	cacheExpiration = time.Now().Add(1 * time.Second)
+	return cache, nil
 }
 
 func getTopStories(numStories int) ([]item, error) {
@@ -75,9 +93,9 @@ func getStories(ids []int) []item {
 		item item
 		err  error
 	}
-	
+
 	resultCh := make(chan result)
-	
+
 	for i := 0; i < len(ids); i++ {
 		var client hn.Client
 		// build a rutine and pass the id by copy
