@@ -69,17 +69,17 @@ func getTopStories(numStories int) ([]item, error) {
 }
 
 func getStories(ids []int) []item {
-	var client hn.Client
 	// make struct to pass the posible results of the method by a channel
 	type result struct {
 		idx  int
 		item item
 		err  error
 	}
-
+	
 	resultCh := make(chan result)
-
+	
 	for i := 0; i < len(ids); i++ {
+		var client hn.Client
 		// build a rutine and pass the id by copy
 		go func(idx, id int) {
 			// call for the item inside the rutine
